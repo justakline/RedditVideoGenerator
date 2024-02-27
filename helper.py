@@ -65,11 +65,13 @@ def createTextClips(segments, video_dimensions ,text_clips):
         clip.set_position("center")
         text_clips.append(clip)
 
-def createIntroCard():
+
+# Creates the intro card as a .png using a script
+def createIntroCard(script, file_name, width):
     # Define the size of the image
-    width = 600
+    
     font = ImageFont.truetype('arialbd.ttf', 24)
-    body_text = "What is the weirdest thing you have ever done is the weir? What is the weirdest thing you have ever done is the weir?What is the weirdest thing you have ever done is the weir?What is the weirdest thing you have ever done is the weir?"
+    body_text = script
     body_text = body_text.split(" ")
     body_text = [t + " " for t in body_text]
     
@@ -90,7 +92,7 @@ def createIntroCard():
             lines.append([line, 50 + (line_spacing*line_number) ])
 
     
-    width, height = 600, lines[-1][1] + 100
+    height = lines[-1][1] + 100
     background_color = (255, 255, 255)
     text_color = (0, 0, 0)
     
@@ -130,7 +132,7 @@ def createIntroCard():
 ])}"
     draw.text((50, 10), header_text, fill= (163, 163, 163  ), font=font)
     
-    section_text = f"u/{randomUserGenerator()} * {random.randint(1,8)}y"
+    section_text = f"u/{randomUserGenerator()} - {random.randint(1,8)}y"
     draw.text((50, 28), section_text, fill= (44, 179, 226 ), font=font)
         
 
@@ -157,8 +159,7 @@ def createIntroCard():
     
 
     # Save the image
-    image.save('reddit_post_image.png')
-    print("here")
+    image.save(file_name)
 
 def randomUserGenerator():
      # Some common words used in usernames

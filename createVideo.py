@@ -5,10 +5,10 @@ import random
 
 
 
-def createIntroOfVideo(model):
+def createIntroOfVideo(model, background_video, start ):
     audio_file_name = "intro_audio.wav"
     
-    script = "how did you lose your laptop?"
+    script = "How big is your penis?"
 
     # Convert text to speech
     textToSpeech(script, audio_file_name)
@@ -18,14 +18,39 @@ def createIntroOfVideo(model):
     segments = []
     trancscribeAudioWithTimestamps(audio_file_name, model, segments)
     
-    pass
+    # Creating the question box
+    intro_card_file_name = "reddit_post_image.png"
+    createIntroCard(script, intro_card_file_name, background_video.size[0])
+    
+    # Create the image Clip
+    intro_image = ImageClip(intro_card_file_name)
+    intro_image.duration = segments[-1]["end"] 
+    intro_image.start = 0
+    intro_image = intro_image.set_position("center")
+    intro_image = intro_image.set_audio(audio_file)
+    
+    
+    # Load the background video and make it smaller
+    random_start = random.randint(1, int(background_video.duration)- 10*60)
+    background_video = background_video.subclip(random_start, random_start +  intro_image.duration )
+    
+    # Composite the video clip ontop of the background video
+    print(background_video.size)
+    intro_video = CompositeVideoClip([background_video, intro_image], size=background_video.size)
+    intro_video.duration = background_video.duration
+
+    intro_video.write_videofile("video.mp4", fps=24, audio=True)
+    
+    # For the next video clip
+    start  = intro_image.duration
+    
 
 
 
 
 
 
-def createBodyOfVideo(script,model ):
+def createBodyOfVideo(script,model, background_video, start ):
     
    
     audio_file_name = "audio.wav"
@@ -41,8 +66,6 @@ def createBodyOfVideo(script,model ):
     trancscribeAudioWithTimestamps(audio_file_name, model, segments)
 
     # Load background clip
-    background_video = VideoFileClip("./videos/minecraft.mp4")
-    background_video.size = (406,720)
     video_duration = segments[-1]['end']
     random_start = random.randint(1, int(background_video.duration)-  int(video_duration))
     background_video = background_video.subclip(random_start, random_start + video_duration + 1)

@@ -28,7 +28,14 @@ This experience, while terrifying, taught me invaluable lessons about courage, r
 
 script = "hello everyone, this is a test"
 
-createIntroCard()
+background_video = VideoFileClip("./videos/minecraft.mp4", audio=False, target_resolution=(720, 406))
+
+
+start = 0
+createIntroOfVideo(model, background_video, start)
+# createBodyOfVideo(script, model, background_video, start)
+
+
 # body_video = createBodyOfVideo(script,model)
 
 
