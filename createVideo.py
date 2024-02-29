@@ -5,13 +5,11 @@ import random
 
 
 
-def createIntroOfVideo(model, background_video, start ):
-    audio_file_name = "intro_audio.wav"
+def createIntroOfVideo(question, model, background_video, background_start, language="en" ):
+    audio_file_name = f"{language}_intro_audio.wav"
     
-    script = "How big is your penis?"
-
     # Convert text to speech
-    textToSpeech(script, audio_file_name)
+    textToSpeech(question, audio_file_name, language)
     audio_file = AudioFileClip(audio_file_name)
     
     # Transcribe audio with timestamps
@@ -19,44 +17,35 @@ def createIntroOfVideo(model, background_video, start ):
     trancscribeAudioWithTimestamps(audio_file_name, model, segments)
     
     # Creating the question box
-    intro_card_file_name = "reddit_post_image.png"
-    createIntroCard(script, intro_card_file_name, background_video.size[0])
+    intro_card_file_name = "./assets/reddit_post_image.png"
+    createIntroCard(question, intro_card_file_name, background_video.size[0], language)
     
     # Create the image Clip
     intro_image = ImageClip(intro_card_file_name)
     intro_image.duration = segments[-1]["end"] 
-    intro_image.start = 0
     intro_image = intro_image.set_position("center")
     intro_image = intro_image.set_audio(audio_file)
     
     
     # Load the background video and make it smaller
     random_start = random.randint(1, int(background_video.duration)- 10*60)
-    background_video = background_video.subclip(random_start, random_start +  intro_image.duration )
+    bg = background_video.subclip(random_start, random_start +  intro_image.duration + 1 )
+    background_start.append(random_start +  intro_image.duration + 1 )
+    
     
     # Composite the video clip ontop of the background video
-    print(background_video.size)
-    intro_video = CompositeVideoClip([background_video, intro_image], size=background_video.size)
-    intro_video.duration = background_video.duration
-
-    intro_video.write_videofile("video.mp4", fps=24, audio=True)
-    
-    # For the next video clip
-    start  = intro_image.duration
-    
-
-
-
-
-
-
-def createBodyOfVideo(script,model, background_video, start ):
-    
+    intro_video = CompositeVideoClip([bg, intro_image], size=bg.size)
+    intro_video.duration = bg.duration
    
-    audio_file_name = "audio.wav"
+
+    return intro_video
+    
+
+def createBodyOfVideo(script,model, background_video, background_start, language = "en"):
+    audio_file_name = f"{language}_body_audio.wav"
 
     # Convert text to speech
-    textToSpeech(script, audio_file_name)
+    textToSpeech(script, audio_file_name, language)
     audio_file = AudioFileClip(audio_file_name)
 
 
@@ -67,20 +56,34 @@ def createBodyOfVideo(script,model, background_video, start ):
 
     # Load background clip
     video_duration = segments[-1]['end']
-    random_start = random.randint(1, int(background_video.duration)-  int(video_duration))
-    background_video = background_video.subclip(random_start, random_start + video_duration + 1)
+    bg = background_video.subclip(background_start[-1], background_start[-1] + video_duration + 1)
 
     # Create text clips for each segment
     text_clips =[]
-    createTextClips(segments, background_video.size, text_clips)
-    body_video = CompositeVideoClip([background_video] + text_clips, size=background_video.size)
+    createTextClips(segments, bg.size, text_clips, language)
+    body_video = CompositeVideoClip([bg] + text_clips, size=bg.size)
    
     # Add audio
     body_video.audio = audio_file
 
     # Export the final video
-    body_video.duration =background_video.duration
+    body_video.duration = bg.duration
     return body_video
 
-def createFinalVideo(intro_video, body_video):
-    pass
+# Composite together all the video clips
+def createFinalVideo(videos):
+    total_duration = 0
+    for video in videos:
+        total_duration += video.duration
+
+    # Make sure the timing of the video/audio of each clips corresponds correctly
+    videos[0].end =  videos[0].start + videos[0].duration
+    for i in range(1, len(videos)):
+        videos[i].start =  videos[i-1].end
+        videos[i].end =  videos[i].start + videos[i].duration 
+        videos[i].audio.start =  videos[i].start
+        videos[i].audio.end =  videos[i].audio.start + videos[i].audio.duration
+        
+    full_video = CompositeVideoClip(videos, size=videos[0].size)
+    full_video.duration = total_duration
+    return full_video

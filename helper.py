@@ -7,12 +7,22 @@ import json
 from moviepy.editor import *
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 import random
+import os
+from googletrans import Translator, LANGUAGES
+
+
+
+def translateText(script, language):
+    translator = Translator()
+    translated_text = translator.translate(script, src="en", dest=language).text
+    return translated_text
 
 # Create the audio, save it as an audiio file, and make sure it is the correct format
-def textToSpeech(script, title="audio.wav"):
-    tts = gTTS(text=script, lang='en')
-    audio_file = title
-    tts.save(audio_file)
+def textToSpeech(script, title="audio.wav", language="en"):
+    """Different Languages"""
+    
+    tts = gTTS(text=script, lang=language)
+    tts.save(f"{title}")
     (AudioSegment.from_file(title)).export(title, format="wav")
     
 # audio_file_name (String): path to the audio file
@@ -23,8 +33,6 @@ def trancscribeAudioWithTimestamps(audio_file_name, model, segments ):
     with wave.open(audio_file_name, "rb") as wf:
         rec = KaldiRecognizer(model, wf.getframerate())
         rec.SetWords(True)  # Enable word-level timestamps
-
-        
         while True:
             data = wf.readframes(4000)
             if len(data) == 0:
@@ -33,7 +41,7 @@ def trancscribeAudioWithTimestamps(audio_file_name, model, segments ):
                 results.append(json.loads(rec.Result()))
 
         results.append(json.loads(rec.FinalResult()))
-        
+        wf.close()
     # Parse the results
     for result in results:
         if 'result' in result:
@@ -43,6 +51,19 @@ def trancscribeAudioWithTimestamps(audio_file_name, model, segments ):
                     'start': word_info['start'],
                     'end': word_info['end']
                 })
+    
+                
+
+    
+    # end_trying = False
+    # while(not end_trying):
+    #     try:
+    #         os.remove(audio_file_name)
+    #         end_trying = True
+    #     except:
+    #         pass
+            
+    
                 
     ############   Format of segments   ###############
     """
@@ -56,9 +77,18 @@ def trancscribeAudioWithTimestamps(audio_file_name, model, segments ):
 # segments (List) : where the list of the transcribed audio and timestamps is stored
 # video_dimensions (Tuple[Int, Int]): Dimensions of the video
 # text_clips (List): List of text_clips created by this function
-def createTextClips(segments, video_dimensions ,text_clips):
+def createTextClips(segments, video_dimensions ,text_clips, language = 'en'):
+    font_size = int(0.1354 * video_dimensions[0])
+    video_font = "Arial-Bold"
+    
+    match language:
+        case "zh-CN":
+            video_font = "./fonts/zh-CN.ttc"
+        case "hi":
+            video_font = "./fonts/hi.ttf"
+        
     for seg in segments:
-        clip = TextClip(seg['text'],font="Arial-Bold", fontsize=55, color='white', stroke_color="black",stroke_width=2, bg_color='transparent', size=video_dimensions, method="caption", align="center")
+        clip = TextClip(seg['text'],font=video_font, fontsize=font_size, color='white', stroke_color="black",stroke_width=2, bg_color='transparent', size=video_dimensions, method="caption", align="center")
         clip.start = float(seg['start'])
         clip.duration = (float(seg['end']) - float(seg['start']))
         clip.end = float(seg['end'])
@@ -67,17 +97,30 @@ def createTextClips(segments, video_dimensions ,text_clips):
 
 
 # Creates the intro card as a .png using a script
-def createIntroCard(script, file_name, width):
+def createIntroCard(script, file_name, width, language="en"):
     # Define the size of the image
+    header_font_size = int(width*0.0443)
+    header_x = int(width*0.1231)
+    body_font_size = int(width*0.0591)
+    body_line_start = int(width*0.1231)
+    image_size = int( width*0.0492)
     
-    font = ImageFont.truetype('arialbd.ttf', 24)
+    font = ImageFont.truetype('arialbd.ttf', body_font_size)
+    match language:
+        case "zh-CN":
+            font = ImageFont.truetype('./fonts/zh-CN.ttc', body_font_size) 
+        case "hi":
+            font = ImageFont.truetype('./fonts/hi.ttf', body_font_size) 
+    
+
+        
     body_text = script
     body_text = body_text.split(" ")
     body_text = [t + " " for t in body_text]
     
-    # Post Text
+    # Body Text
     # for wrapping
-    line_spacing = 22
+    line_spacing = body_font_size
     line_number = 0
     line = ""
     lines = []
@@ -85,14 +128,15 @@ def createIntroCard(script, file_name, width):
         if(font.getlength(line + str(body_text[i])) < width):
             line += body_text[i]
         else:
-            lines.append([line, 50 + (line_spacing*line_number) ])
+            lines.append([line, body_line_start + (line_spacing*line_number) ])
             line_number +=1
             line = body_text[i]
         if (i == len(body_text) -1):
-            lines.append([line, 50 + (line_spacing*line_number) ])
+            lines.append([line, body_line_start + (line_spacing*line_number) ])
 
     
-    height = lines[-1][1] + 100
+    height = int(lines[-1][1] + 4*line_spacing)
+    
     background_color = (255, 255, 255)
     text_color = (0, 0, 0)
     
@@ -108,7 +152,7 @@ def createIntroCard(script, file_name, width):
         
     
     # Load a font
-    font = ImageFont.truetype('arial.ttf', 18)    
+    font = ImageFont.truetype('arial.ttf', header_font_size)    
     # Reddit Post Header
     header_text = f"{random.choice([
     'r/LetsNotMeet',
@@ -130,32 +174,33 @@ def createIntroCard(script, file_name, width):
     'r/TrueOffMyChest'
 
 ])}"
-    draw.text((50, 10), header_text, fill= (163, 163, 163  ), font=font)
+    draw.text((header_x, 10), header_text, fill= (163, 163, 163  ), font=font)
     
     section_text = f"u/{randomUserGenerator()} - {random.randint(1,8)}y"
-    draw.text((50, 28), section_text, fill= (44, 179, 226 ), font=font)
+    draw.text((header_x, 10+int(header_font_size)), section_text, fill= (44, 179, 226 ), font=font)
         
 
     # Interaction counts
     
-    font_size = 18
-    font = ImageFont.truetype('arial.ttf', 18)
-    image_size = 20
+  
+    font = ImageFont.truetype('arial.ttf', header_font_size)
+  
+ 
     
-    image.paste(Image.open("./reddit_images/reddit.png").resize([int(image_size*1.8) ,int(image_size*1.8 )]), ( 10,10 ))
+    image.paste(Image.open("./assets/reddit.png").resize([int(image_size*1.8) ,int(image_size*1.8 )]), ( 10,10 ))
     
-    image.paste(Image.open("./reddit_images/up_arrow.png").resize([image_size ,image_size ]), ( int(width/25) - image_size,height-font_size *2 ))
+    image.paste(Image.open("./assets/up_arrow.png").resize([image_size ,image_size ]), ( int(width/25) - image_size,height- int(font.size *1.5) ))
     interactions_text = f"{ str(random.randint(1,100)) +"k"} "
-    draw.text((width/25, height-font_size *2), interactions_text, fill=text_color, font=font)
-    image.paste(Image.open("./reddit_images/down_arrow.png").resize([image_size ,image_size ]), ( int(width/35 + font.getlength(interactions_text) + width/100),height-font_size *2 ))
+    draw.text((width/25, height- int( font.size *1.5)), interactions_text, fill=text_color, font=font)
+    image.paste(Image.open("./assets/down_arrow.png").resize([image_size ,image_size ]), ( int(width/35 + font.getlength(interactions_text) + width/100),height-  int(font.size *1.5 )))
    
     interactions_text = f"{str(random.randint(1,100)) +"k"} "
-    image.paste(Image.open("./reddit_images/comment.png").resize([image_size ,image_size ]), ( int(9*width/20-image_size),height-font_size *2 ))
-    draw.text((9*width/20, height-font_size *2), interactions_text, fill=text_color, font=font)
+    image.paste(Image.open("./assets/comment.png").resize([image_size ,image_size ]), ( int(9*width/20-image_size),height-  int(font.size *1.5)))
+    draw.text((9*width/20, height-  int( font.size *1.5)), interactions_text, fill=text_color, font=font)
     
     interactions_text = f"Share"
-    image.paste(Image.open("./reddit_images/share.png").resize([image_size ,image_size ]), ( int(7*width/8-image_size),height-font_size *2 ))
-    draw.text((7*width/8, height-font_size *2), interactions_text, fill=text_color, font=font)
+    image.paste(Image.open("./assets/share.png").resize([image_size ,image_size ]), ( int(7*width/8-image_size),height- int( font.size *1.5)))
+    draw.text((7*width/8, height-  int( font.size *1.5)), interactions_text, fill=text_color, font=font)
     
 
     # Save the image

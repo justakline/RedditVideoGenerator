@@ -1,0 +1,6 @@
+gTTS: Google Text to Speech - turn script into audio
+googletrans: translating text to another language
+Vosk: Turn audio into text with timestamps
+Moviepy: Creating videos progrmatically
+PyDub: Changing audio formats
+PIL: Creating still image progrmatically

@@ -2,16 +2,21 @@ import json
 from moviepy.editor import *
 from vosk import Model, KaldiRecognizer
 
-import os
 from helper import *
 from createVideo import *
-import pygame
-import random
+
+def createVideo(language):
+    model = Model(f"./vosk_models/{language}")
+    background_start = []
+    translated_question = translateText(question, language)
+    translated_post = translateText(script, language)
+    intro_video = createIntroOfVideo(translated_question, model, background_video, background_start, language)
+    body_video = createBodyOfVideo(translated_post, model, background_video, background_start, language)
+    full_video  = createFinalVideo([intro_video, body_video])
+    full_video.write_videofile(f"final_output_{language}.mp4", fps=24, audio=True)
 
 
 
-# Load Vosk model
-model = Model("./vosk_model/model/model_1.5")
 
 
 script = """I embarked on an adventure that I had been dreaming about for years: skydiving. The thrill of free-falling through the sky, the rush of adrenaline, and the ultimate test of courage were all things I craved. So, on a seemingly ordinary weekend, I decided it was time to turn this dream into reality. I was a bit nervous, of course, but the excitement far outweighed any fear.
@@ -28,15 +33,23 @@ This experience, while terrifying, taught me invaluable lessons about courage, r
 
 script = "hello everyone, this is a test"
 
-background_video = VideoFileClip("./videos/minecraft.mp4", audio=False, target_resolution=(720, 406))
+question = "What is the scariest moment of your life?"
+
+background_video = VideoFileClip("./assets/minecraft.mp4", audio=False, target_resolution=(1440, 812))
+
+# Start [] shows where the next clip should start for a smooth transition
+
+languages = ["en", "es", "fr", "de", "pt", "zh-CN", "hi"]
+languages = ["hi", "zh-CN"]
 
 
-start = 0
-createIntroOfVideo(model, background_video, start)
-# createBodyOfVideo(script, model, background_video, start)
+
+for language in languages:
+    # break
+    # threading.
+    createVideo(language)
+    
 
 
-# body_video = createBodyOfVideo(script,model)
 
 
-# body_video.write_videofile("final_output.mp4", fps=24, audio=True)

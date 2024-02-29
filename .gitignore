@@ -2,3 +2,6 @@ videos
 *.mp4
 *.wav
 *.mp3
+*.png
+llama
+vosk_models
