@@ -5,3 +5,4 @@ videos
 *.png
 llama
 vosk_models
+*.env

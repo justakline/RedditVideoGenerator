@@ -4,6 +4,11 @@ from vosk import Model, KaldiRecognizer
 
 from helper import *
 from createVideo import *
+from generateStory import *
+import questions
+
+
+
 
 def createVideo(language):
     model = Model(f"./vosk_models/{language}")
@@ -31,7 +36,8 @@ As I floated down, the world below me slowly coming into focus, I felt a mix of 
 
 This experience, while terrifying, taught me invaluable lessons about courage, resilience, and the importance of preparation. It was a reminder that life is fragile and should be lived to the fullest. Would I skydive again? It might take some time before I answer that question, but one thing is for certain: I will never forget the day I danced with danger and lived to tell the tale"""
 
-script = "hello everyone, this is a test"
+question = questions[0]
+script = generateStory()
 
 question = "What is the scariest moment of your life?"
 
